@@ -1,0 +1,120 @@
+﻿@model List<MyContacts.Models.Contact>
+@{
+    ViewData["Title"] = "Contact List";
+}
+<div class="row mb-4">
+    <div class="col-md-6 text-right">
+        <a class="btn btn-primary" asp-controller="Contact" asp-action="Add">Add Contact</a>
+    </div>
+    <div class="col-md-6">
+        <form class="d-flex text-right" asp-controller="Home" asp-action="Index">
+            <input class="form-control me-2" type="search" name="SearchString" placeholder="Search" aria-label="Search">
+            <button class="btn btn-primary" type="submit">Search</button>
+        </form>
+    </div>
+</div>
+
+<table class="table">
+    <tr>
+        <th>
+            First Name
+        </th>
+        <th>
+            Last Name
+        </th>
+        <th>
+            @Html.DisplayNameFor(model => model[0].Email)
+        </th>
+        <th>
+            Phone Number
+        </th>
+        <th></th>
+    </tr>
+
+    @foreach (var item in Model)
+    {
+        <tr>
+            <td>
+                @Html.DisplayFor(modelItem => item.FirstName)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.LastName)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.Email)
+            </td>
+            <td>
+                @Html.DisplayFor(modelItem => item.PhoneNumber)
+            </td>
+            <td>
+                <!-- Edit Button -->
+                <button type="button" class="btn btn-secondary edit-contact" data-id="@item.ContactId" data-bs-toggle="modal" data-bs-target="#editContactModal">
+                    View
+                </button>
+            </td>
+        </tr>
+    }
+</table>
+
+<!-- Bootstrap Modal -->
+<div class="modal fade" id="editContactModal" tabindex="-1" aria-labelledby="editContactModalLabel" aria-hidden="true">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="editContactModalLabel">Edit Contact</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div id="editContactFormContainer">
+                    <!-- Form will be loaded here via AJAX -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script>
+        $(document).ready(function () {
+            // Load Edit Form into Modal
+            $('#editContactModal').on('show.bs.modal', function (event) {
+                if (event.target.id == "editContactModal") {
+                    var address = $("#floatingAddress").val();
+                    let newSrc = `https://maps.google.com/maps?q=${encodeURIComponent(address)}&t=k&z=8&ie=UTF8&iwloc=&output=embed`;
+                    $("#gmap_canvasEdit").attr("src", newSrc);
+
+                    var button = $(event.relatedTarget); // Button that triggered the modal
+                    var contactId = button.data('id'); // Extract contact ID
+                    var url = '@Url.Action("EditContact", "Contact")' + contactId; // URL to load form
+                    $("#editContactFormContainer").load(url);
+                }
+            });
+
+            // Handle form submission via AJAX
+            $(document).on('submit', '#editContactForm', function (event) {
+                event.preventDefault(); // Prevent the default form submission
+
+                var $form = $(this);
+                $.ajax({
+                    type: $form.attr('method'),
+                    url: $form.attr('action'),
+                    data: $form.serialize(),
+                    success: function (response) {
+                        if (response.success) {
+                            $('#editContactModal').modal('hide');
+                            // Handle successful form submission (e.g., update the contact list)
+                            location.reload(); // Reload the page or update the table row
+                        } else {
+                            // If not successful, load the form with validation errors
+                            $('#editContactFormContainer').html(response);
+                        }
+                    },
+                    error: function (response) {
+                        console.log("Error submitting form", response);
+                    }
+                });
+            });
+        });
+    </script>
+}

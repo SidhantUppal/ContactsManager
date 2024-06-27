@@ -1,0 +1,125 @@
+﻿@model MyContacts.Models.Contact
+
+<style>
+    #gmap_canvasEdit {
+        height: 300px;
+        width: 100%;
+    }
+</style>
+
+<form asp-action="EditContact" method="post" id="editContactForm">
+    <div asp-validation-summary="All"></div>
+    <div class="form-floating mb-3">
+        <input class="form-control" id="floatingFirstName" asp-for="FirstName" placeholder="First Name">
+        <label for="floatingFirstName" asp-for="FirstName">First Name</label>
+    </div>
+    <div class="form-floating mb-3">
+        <input class="form-control" id="floatingLastName" asp-for="LastName" placeholder="Last Name">
+        <label for="floatingLastName" asp-for="LastName">Last Name</label>
+    </div>
+    <div class="form-floating mb-3">
+        <input class="form-control" id="floatingPhoneNumber" asp-for="PhoneNumber" placeholder="Phone Number">
+        <label for="floatingPhoneNumber" asp-for="PhoneNumber">Phone Number</label>
+    </div>
+    <div class="form-floating mb-3">
+        <input class="form-control" id="floatingEmail" asp-for="Email" placeholder="Email">
+        <label for="floatingEmail" asp-for="Email">Email</label>
+    </div>
+    <div class="form-floating mb-3">
+        <select asp-for="CategoryId" class="form-select">
+            <option value="">Select Category</option>
+            @foreach (var category in ViewBag.Categories)
+            {
+                <option value="@category.CategoryId">@category.Name</option>
+            }
+        </select>
+    </div>
+    <input type="hidden" asp-for="ContactId" />
+    <div class="form-floating mb-3">
+        <input class="form-control floatingAddressEdit" id="floatingAddressEdit" asp-for="Address" placeholder="Address">
+        <label for="floatingAddressEdit" asp-for="Address">Address</label>
+    </div>
+    <div class="form-floating mb-3">
+        <iframe width="100%" height="500" id="gmap_canvasEdit" src="https://maps.google.com/maps?q=@(ViewBag.Address)&t=k&z=8&ie=UTF8&iwloc=&output=embed" frameborder="0" scrolling="no" marginheight="0" marginwidth="0"></iframe>
+    </div>
+    <button type="submit" class="btn btn-primary">Save</button>
+</form>
+<button class="btn btn-danger" style="position: absolute;margin-top: -37px;margin-left: 64px;" data-bs-toggle="modal" data-bs-target="#confirmDeleteModal" data-action="delete">
+    Delete
+</button>
+
+<!-- Confirmation Modal for Delete -->
+<div class="modal fade" id="confirmDeleteModal" style="background:#0000009c;" tabindex="1" aria-labelledby="confirmDeleteModalLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmDeleteModalLabel">Confirm Delete</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form asp-action="delete" method="post" style="padding: 30px 15px 30px 15px;"class="text-center">
+                <input type="hidden" asp-for="ContactId" />
+                <h5>Are you sure you want to delete @Model.FirstName @Model.LastName ?</h5>
+                <button type="submit" class="btn btn-danger">Delete</button>
+            </form>
+        </div>
+    </div>
+</div>
+
+<script>
+    $(document).ready(function () {
+        var address = $("#floatingAddress").val();
+        // Handle form submission via AJAX
+        $(document).on('submit', '#editContactForm', function (event) {
+            event.preventDefault(); // Prevent the default form submission
+            var $form = $(this);
+            $.ajax({
+                type: $form.attr('method'), // Ensure this is 'POST'
+                url: $form.attr('action'), // Should be '/Contacts/EditContact'
+                data: $form.serialize(),
+                success: function (response) {
+                    if (response.success) {
+                        $('#editContactModal').modal('hide');
+                        location.reload(); // Reload the page or update the contact list
+                    } else {
+                        $('#editContactFormContainer').html(response); // Reload form with errors
+                    }
+                },
+                error: function (response) {
+                    console.log("Error submitting form", response);
+                }
+            });
+        });
+
+        // Handle delete confirmation modal
+        $('#confirmDeleteButton').click(function (event) {
+            event.preventDefault();
+            var contactId = $('#ContactId').val(); // Get the contact ID
+            $.ajax({
+                type: 'POST', // Ensure this is POST for deletion
+                url: '@Url.Action("Delete", "Contact")' + '/' + contactId, // Ensure correct URL formation
+                success: function (response) {
+                    $('#confirmDeleteModal').modal('hide'); // Close delete confirmation modal
+                    location.reload(); // Reload the page or update contact list
+                },
+                error: function (response) {
+                    console.log("Error deleting contact", response);
+                }
+            });
+        });
+
+        $('#floatingAddressEdit').on('input', function () {
+            var address = $(this).val();
+            if (address.length > 3) {
+                var geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${address}`;
+                $.getJSON(geocodeUrl, function (data) {
+                    if (data && data.length > 0) {
+                        var lat = data[0].lat;
+                        var lon = data[0].lon;
+                        var mapSrc = `https://maps.google.com/maps?q=${lat},${lon}&t=k&z=15&ie=UTF8&iwloc=&output=embed`;
+                        $('#gmap_canvasEdit').attr('src', mapSrc);
+                    }
+                });
+            }
+        });
+    });
+</script>

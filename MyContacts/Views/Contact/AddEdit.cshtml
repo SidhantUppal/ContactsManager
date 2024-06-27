@@ -1,0 +1,72 @@
+﻿@model MyContacts.Models.Contact
+@{
+    ViewBag.Title = ViewBag.Action;
+}
+<style>
+    #gmap_canvas {
+        height: 300px;
+        width: 100%;
+    }
+</style>
+
+<form asp-action="Add" method="post">
+    <div asp-validation-summary="All"></div>
+    <div class="form-floating mb-3">
+        <input class="form-control" id="floatingFirstName" asp-for="FirstName" placeholder="First Name">
+        <label for="floatingFirstName" asp-for="FirstName">First Name</label>
+    </div>
+    <div class="form-floating mb-3">
+        <input class="form-control" id="floatingLastName" asp-for="LastName" placeholder="Last Name">
+        <label for="floatingLastName" asp-for="LastName">Last Name</label>
+    </div>
+    <div class="form-floating mb-3">
+        <input class="form-control" id="floatingPhoneNumber" asp-for="PhoneNumber" placeholder="Phone Number">
+        <label for="floatingLastName" asp-for="PhoneNumber">Phone Number</label>
+    </div>
+    <div class="form-floating mb-3">
+        <input class="form-control" id="floatingEmail" asp-for="Email" placeholder="Email">
+        <label for="floatingEmail" asp-for="Email">Email</label>
+    </div>
+    <div class="mb-3">
+        <select asp-for="CategoryId" class="form-select">
+            <option value="">Select Category</option>
+            @foreach (var category in ViewBag.Categories)
+            {
+                <option value="@category.CategoryId">@category.Name</option>
+            }
+        </select>
+    </div>
+
+    <div class="form-floating mb-3">
+        <input class="form-control" id="floatingAddress" asp-for="Address" placeholder="Address">
+        <label for="floatingAddress" asp-for="Address">Address</label>
+    </div>
+    <div class="form-floating mb-3">
+        <iframe width="100%" height="500" id="gmap_canvas" src="https://maps.google.com/maps?q=&t=k&z=8&ie=UTF8&iwloc=&output=embed" frameborder="0" scrolling="no" marginheight="0" marginwidth="0"></iframe>
+    </div>
+    <input type="hidden" asp-for="ContactId" />
+    <button style="mb-5" type="submit" class="btn btn-primary">Save</button>
+
+
+</form>
+
+@section Scripts {
+    <script>
+        $(document).ready(function () {
+            $('#floatingAddress').on('input', function () {
+                var address = $(this).val();
+                if (address.length > 3) {
+                    var geocodeUrl = `https://nominatim.openstreetmap.org/search?format=json&q=${address}`;
+                    $.getJSON(geocodeUrl, function (data) {
+                        if (data && data.length > 0) {
+                            var lat = data[0].lat;
+                            var lon = data[0].lon;
+                            var mapSrc = `https://maps.google.com/maps?q=${lat},${lon}&t=k&z=15&ie=UTF8&iwloc=&output=embed`;
+                            $('#gmap_canvas').attr('src', mapSrc);
+                        }
+                    });
+                }
+            });
+        });
+    </script>
+}
